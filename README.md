@@ -11,10 +11,18 @@ Install:
 % cp mdtree/mdtree ~/bin
 ```
 
-Use:
+Use instead `tree`:
 
 ```
-% mdtree
+% mdtree -L 2 -h
+* .
+    * [ 454]  composer.json
+    * [1.1K]  LICENSE
+    * [4.0K]  Psr
+        * [4.0K]  Log
+    * [1.1K]  README.md
+
+* 2 directories, 3 files
 ```
 
 ## Requirements
