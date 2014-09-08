@@ -3,34 +3,32 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
-func main() {
-	args := os.Args[1:]
+type ListWords struct {
+	Needles []string
+	NameRegex *regexp.Regexp
+}
 
-	hasColorArg := false
+func hasColorArg(args []string) bool {
 	for _, arg := range args {
 		if arg == "-C" || arg == "-n" {
-			hasColorArg = true
-			break
+			return true
 		}
 	}
-	if !hasColorArg {
-		args = append(args, "-C")
-	}
 
-	out, err := exec.Command("tree", args...).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return false
+}
 
+func resolveListWords() *ListWords {
 	var needles []string
 	var nameRegex *regexp.Regexp
+
 	if os.Getenv("LANG") == "C" {
 		needles = []string{"|", "|-", "`-"}
 		nameRegex = regexp.MustCompile("-- (.+)$")
@@ -39,50 +37,69 @@ func main() {
 		nameRegex = regexp.MustCompile("── (.+)$")
 	}
 
-	currentPos := -1
+	return &ListWords{Needles: needles, NameRegex: nameRegex}
+}
+
+func calculateIndentLv(line string, listWords *ListWords) int {
 	indentLv := 0
 
-	lines := strings.Split(string(out[:]), "\n")
+	pos := -1
+	for _, needle := range listWords.Needles {
+		p := strings.LastIndex(line, needle)
+		if p > -1 && pos < p {
+			pos = p
+		}
+	}
+
+	if pos > -1 {
+		indentLv = int(utf8.RuneCountInString(line[:pos]) / 4) + 1
+	}
+
+	return indentLv
+}
+
+func parseName(line string, listWords *ListWords) string {
+	matches := listWords.NameRegex.FindStringSubmatch(line)
+	if (len(matches) > 0) {
+		return matches[1]
+	}
+
+	return line
+}
+
+func ParseTree2Markdown(treeString string) string {
+	var mdStrings []string
+
+	listWords := resolveListWords()
+
+	lines := strings.Split(treeString, "\n")
 	for _, line := range lines {
 		if line == "" {
-			fmt.Println()
+			mdStrings = append(mdStrings, "")
 			continue
 		}
 
-		pos := -1
+		indentLv := calculateIndentLv(line, listWords)
+		name := parseName(line, listWords)
 
-		for _, needle := range needles {
-			p := strings.LastIndex(line, needle)
-			if p > -1 {
-				pos = int(math.Max(float64(p), float64(pos)))
-			}
-		}
-
-		switch {
-		case pos == -1:
-			indentLv = 0
-			break
-		case pos == 0:
-			indentLv = 1
-			break
-		case currentPos < pos:
-			indentLv++
-			break
-		case currentPos > pos:
-			indentLv--
-			break
-		}
-
-		currentPos = pos
-
-		name := ""
-		matches := nameRegex.FindStringSubmatch(line)
-		if len(matches) > 0 {
-			name = matches[1]
-		} else {
-			name = line
-		}
-
-		fmt.Println(strings.Repeat("    ", indentLv) + "* " + name)
+		mdStrings = append(mdStrings, strings.Repeat("    ", indentLv) + "* " + name)
 	}
+
+	return strings.Join(mdStrings, "\n")
+}
+
+
+func main() {
+	args := os.Args[1:]
+
+	if !hasColorArg(args) {
+		args = append(args, "-C")
+	}
+
+	out, err := exec.Command("tree", args...).Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Print(ParseTree2Markdown(string(out[:])))
 }
