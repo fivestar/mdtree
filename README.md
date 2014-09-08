@@ -4,12 +4,7 @@ mdtree - Parse tree command output to markdown list syntax.
 
 ## Usage
 
-Install:
-
-```
-% git clone https://github.com/fivestar/mdtree.git
-% cp mdtree/mdtree ~/bin
-```
+Install binary in your $PATH from [releases](https://github.com/fivestar/mdtree/releases).
 
 Use instead `tree`:
 
@@ -28,5 +23,4 @@ Use instead `tree`:
 ## Requirements
 
 * `tree`
-* `php >= 5.4`
 
