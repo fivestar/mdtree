@@ -11,7 +11,7 @@ import (
 )
 
 type ListWords struct {
-	Needles []string
+	Needles   []string
 	NameRegex *regexp.Regexp
 }
 
@@ -52,7 +52,7 @@ func calculateIndentLv(line string, listWords *ListWords) int {
 	}
 
 	if pos > -1 {
-		indentLv = int(utf8.RuneCountInString(line[:pos]) / 4) + 1
+		indentLv = int(utf8.RuneCountInString(line[:pos])/4) + 1
 	}
 
 	return indentLv
@@ -60,7 +60,7 @@ func calculateIndentLv(line string, listWords *ListWords) int {
 
 func parseName(line string, listWords *ListWords) string {
 	matches := listWords.NameRegex.FindStringSubmatch(line)
-	if (len(matches) > 0) {
+	if len(matches) > 0 {
 		return matches[1]
 	}
 
@@ -82,12 +82,11 @@ func ParseTree2Markdown(treeString string) string {
 		indentLv := calculateIndentLv(line, listWords)
 		name := parseName(line, listWords)
 
-		mdStrings = append(mdStrings, strings.Repeat("    ", indentLv) + "* " + name)
+		mdStrings = append(mdStrings, strings.Repeat("    ", indentLv)+"* "+name)
 	}
 
 	return strings.Join(mdStrings, "\n")
 }
-
 
 func main() {
 	args := os.Args[1:]
