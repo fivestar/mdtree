@@ -29,6 +29,16 @@ func main() {
         log.Fatal(err)
     }
 
+    var needles []string
+    var nameRegex *regexp.Regexp
+    if os.Getenv("LANG") == "C" {
+        needles = []string{"|", "|-", "`-"}
+        nameRegex = regexp.MustCompile("-- (.+)$")
+    } else {
+        needles = []string{"│", "├", "└"}
+        nameRegex = regexp.MustCompile("── (.+)$")
+    }
+
     currentPos := -1
     indentLv := 0
 
@@ -41,7 +51,6 @@ func main() {
 
         pos := -1
 
-        needles := []string{"│", "├", "└"}
         for _, needle := range needles {
             p := strings.LastIndex(line, needle)
             if p > -1 {
@@ -67,8 +76,7 @@ func main() {
         currentPos = pos
 
         name := ""
-        re := regexp.MustCompile("── (.+)$")
-        matches := re.FindStringSubmatch(line)
+        matches := nameRegex.FindStringSubmatch(line)
         if len(matches) > 0 {
             name = matches[1]
         } else {
