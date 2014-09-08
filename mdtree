@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php
+
+$args = $argv;
+array_shift($args);
+
+if (!array_filter($args, function ($a) { return strpos($a, '-') === 0; } )) {
+    $args[] = '-C';
+}
+
+$indent = '    ';
+
+// execute `tree`
+exec('tree ' . implode(' ', $args), $output);
+
+foreach ($output as $line) {
+    if ($line === '') {
+        echo PHP_EOL;
+        continue;
+    }
+
+    $level = 0;
+    foreach (['│', '├', '└'] as $needle) {
+        $level += mb_substr_count($line, $needle);
+    }
+
+    $name = '(unknown)';
+    if (preg_match('/── (.+)$/', $line, $matches)) {
+        $name = $matches[1];
+    } else {
+        $name = $line;
+    }
+
+    echo str_repeat($indent, $level), '* ', $name, PHP_EOL;
+}
