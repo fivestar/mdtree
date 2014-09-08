@@ -13,16 +13,31 @@ $indent = '    ';
 // execute `tree`
 exec('tree ' . implode(' ', $args), $output);
 
+$currentPos = null;
+$indentLv = 0;
 foreach ($output as $line) {
     if ($line === '') {
         echo PHP_EOL;
         continue;
     }
 
-    $level = 0;
+    $pos = null;
     foreach (['│', '├', '└'] as $needle) {
-        $level += mb_substr_count($line, $needle);
+        $p = mb_strrpos($line, $needle);
+        if ($p !== false) {
+            $pos = (int) max($p, $pos);
+        }
     }
+    if ($pos === null) {
+        $indentLv = 0;
+    } elseif ($pos === 0) {
+        $indentLv = 1;
+    } elseif ($currentPos < $pos) {
+        $indentLv++;
+    } elseif ($currentPos > $pos) {
+        $indentLv--;
+    }
+    $currentPos = $pos;
 
     $name = '(unknown)';
     if (preg_match('/── (.+)$/', $line, $matches)) {
@@ -31,5 +46,5 @@ foreach ($output as $line) {
         $name = $line;
     }
 
-    echo str_repeat($indent, $level), '* ', $name, PHP_EOL;
+    echo str_repeat($indent, $indentLv), '* ', $name, PHP_EOL;
 }
