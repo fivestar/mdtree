@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -15,7 +12,28 @@ type ListWords struct {
 	NameRegex *regexp.Regexp
 }
 
-func hasColorArg(args []string) bool {
+func ParseTree2Markdown(treeString string) string {
+	var mdStrings []string
+
+	listWords := resolveListWords()
+
+	lines := strings.Split(treeString, "\n")
+	for _, line := range lines {
+		if line == "" {
+			mdStrings = append(mdStrings, "")
+			continue
+		}
+
+		indentLv := calculateIndentLv(line, listWords)
+		name := parseName(line, listWords)
+
+		mdStrings = append(mdStrings, strings.Repeat("    ", indentLv)+"* "+name)
+	}
+
+	return strings.Join(mdStrings, "\n")
+}
+
+func HasColorArg(args []string) bool {
 	for _, arg := range args {
 		if arg == "-C" || arg == "-n" {
 			return true
@@ -46,7 +64,7 @@ func calculateIndentLv(line string, listWords *ListWords) int {
 	pos := -1
 	for _, needle := range listWords.Needles {
 		p := strings.LastIndex(line, needle)
-		if p > -1 && pos < p {
+		if pos < p {
 			pos = p
 		}
 	}
@@ -65,40 +83,4 @@ func parseName(line string, listWords *ListWords) string {
 	}
 
 	return line
-}
-
-func ParseTree2Markdown(treeString string) string {
-	var mdStrings []string
-
-	listWords := resolveListWords()
-
-	lines := strings.Split(treeString, "\n")
-	for _, line := range lines {
-		if line == "" {
-			mdStrings = append(mdStrings, "")
-			continue
-		}
-
-		indentLv := calculateIndentLv(line, listWords)
-		name := parseName(line, listWords)
-
-		mdStrings = append(mdStrings, strings.Repeat("    ", indentLv)+"* "+name)
-	}
-
-	return strings.Join(mdStrings, "\n")
-}
-
-func main() {
-	args := os.Args[1:]
-
-	if !hasColorArg(args) {
-		args = append(args, "-C")
-	}
-
-	out, err := exec.Command("tree", args...).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Print(ParseTree2Markdown(string(out[:])))
 }
